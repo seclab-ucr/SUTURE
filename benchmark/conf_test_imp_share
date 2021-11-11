@@ -1,0 +1,3 @@
+ioctl0 MY_IOCTL 1
+ioctl1 NULL_ARG
+* XENTRY_SHARED_OBJ data1
