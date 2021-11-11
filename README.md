@@ -6,7 +6,7 @@ two highlights are:
 - **High-Precision**: Multiple practical and/or innovative precision enhancements packed, SUTURE is inter-procedure, flow-, contex-, field-, index-, and opportunistically path-sensitive, with on-the-fly memory SSA construction, multi-source multi-sink pairing, careful pointer arithmetic handling and indirect call resolution for Linux kernels.
 - **High-Order**: SUTURE is able to construct high-order taint flows and discover high-order taint vulnerabilities (e.g., the user input flows to a global variable in the 1st syscall invocation, then the global variable flows to a sensitive statement in the 2nd syscall invocation, making a 2nd-order taint vulnerability).  
 
-We name it SUTURE in the hope that it can be surgically precise, while being able to stitch multiple syscalls/entry functions together to construct high-order data flows. For more details please refer to our paper: [Statically Discovering High-Order Taint Style Vulnerabilities in OS Kernels](https://www.cs.ucr.edu/~zhiyunq/pub/ccs21_static_high_order.pdf) in *ACM CCS'21*.
+We name it SUTURE in the hope that it can be surgically precise, while being able to stitch multiple syscalls/entry functions together to construct high-order data flows. For more details please refer to our paper: [Statically Discovering High-Order Taint Style Vulnerabilities in OS Kernels](https://github.com/seclab-ucr/SUTURE/raw/main/docs/suture-ccs21.pdf) in *ACM CCS'21*.
 
 ## 0x0 Setup  
 
@@ -31,7 +31,7 @@ Upon a successful build, SUTURE is ready to use.
 
 ## 0x1 Vulnerability Discovery w/ an Example  
 
-SUTURE can be used to discover high-order taint vulnerabilities out-of-the-box, in this section we walk through this process w/ an example (e.g., the motivating example as shown in Section 2.1 in our [paper](https://www.cs.ucr.edu/~zhiyunq/pub/ccs21_static_high_order.pdf)).  
+SUTURE can be used to discover high-order taint vulnerabilities out-of-the-box, in this section we walk through this process w/ an example (e.g., the motivating example as shown in Section 2.1 in our [paper](https://github.com/seclab-ucr/SUTURE/raw/main/docs/suture-ccs21.pdf)).  
 
 ### 0x10 Prepare the Input  
 
@@ -78,7 +78,7 @@ The aforementioned log file is also SUTURE's output, SUTURE will embed its disco
 ~/suture$ ls benchmark/warns-conf_motivating_example-2021-11-10/
 all  int_overflow  taint_data_use  taint_loopbound  taint_ptr_def
 ```  
-In the folder there are 5 warning reports, *all* contains all types of warnings grouped together according to their data flow relationship, while other reports only contain specific types of warnings (e.g., integer overflow, tainted pointer dereference, etc.), more details about how we group warnings can be found in our [paper](https://www.cs.ucr.edu/~zhiyunq/pub/ccs21_static_high_order.pdf) (Section 4). We usually only use the unified report *all*.  
+In the folder there are 5 warning reports, *all* contains all types of warnings grouped together according to their data flow relationship, while other reports only contain specific types of warnings (e.g., integer overflow, tainted pointer dereference, etc.), more details about how we group warnings can be found in our [paper](https://github.com/seclab-ucr/SUTURE/raw/main/docs/suture-ccs21.pdf) (Section 4). We usually only use the unified report *all*.  
 ```
 ~/suture$ cat -n benchmark/warns-conf_motivating_example-2021-11-10/all
      1  =========================GROUP 0 (2 - 2)=========================
@@ -105,10 +105,10 @@ In the folder there are 5 warning reports, *all* contains all types of warnings 
     22  motivating_example.c@30 (  %add = add i8 %0, -16, !dbg !31)
     23
 ```  
-**Explanation**: At a high level, the warning report contains some warning **groups**, each group contains several **warnings**, and each warning contains several taint **traces** that originate from a user input and sink to a same sensitive program statement. In other words, one **warning** is raised for a certain program statement and of a specific type (e.g., integer overflow), while a **group** contains multiple closely related warnings from the data flow perspective (see Section 4 in our [paper](https://www.cs.ucr.edu/~zhiyunq/pub/ccs21_static_high_order.pdf)), thus a **group** may have multiple warned program statements and include different warning types.  
+**Explanation**: At a high level, the warning report contains some warning **groups**, each group contains several **warnings**, and each warning contains several taint **traces** that originate from a user input and sink to a same sensitive program statement. In other words, one **warning** is raised for a certain program statement and of a specific type (e.g., integer overflow), while a **group** contains multiple closely related warnings from the data flow perspective (see Section 4 in our [paper](https://github.com/seclab-ucr/SUTURE/raw/main/docs/suture-ccs21.pdf)), thus a **group** may have multiple warned program statements and include different warning types.  
 
 Take the above warning report as an example:  
-- Line 1: The header line of a warning group, the format is `===GROUP No. (min_order - max_order)===`, where `min_order` is the minimal order (e.g., simply put, *order* is the times of the entry function invocations required in the taint propagation, see Section 3.2 in our [paper](https://www.cs.ucr.edu/~zhiyunq/pub/ccs21_static_high_order.pdf) for a more formal definition.) of the taint traces within this group, and `max_order` the max.  
+- Line 1: The header line of a warning group, the format is `===GROUP No. (min_order - max_order)===`, where `min_order` is the minimal order (e.g., simply put, *order* is the times of the entry function invocations required in the taint propagation, see Section 3.2 in our [paper](https://github.com/seclab-ucr/SUTURE/raw/main/docs/suture-ccs21.pdf) for a more formal definition.) of the taint traces within this group, and `max_order` the max.  
 - Line 2-4: A summary of the warned program statements and warning types of this group.  
 - Line 6: The header line of a warning, following the same format as the group header line, but note that the `WARN No.` is local to its group.  
 - Line 7: The warned program statement and type of this warning (e.g., line 30 in [*motivating_example.c*](https://github.com/seclab-ucr/SUTURE/blob/main/benchmark/motivating_example.c)).  
@@ -117,7 +117,7 @@ Take the above warning report as an example:
 Coming back to our motivating example warning report, Line 9-14 is the 1st segment in the trace, where we need to invoke *entry0()* (Line 10) and walk through two instructions (Line 13-14) in *entry0()* (so that *user_input* of *entry0()* is propagated to the global variable *d.b[0]* in [*motivating_example.c*](https://github.com/seclab-ucr/SUTURE/blob/main/benchmark/motivating_example.c)), then Line 15-22 is the second segment, where we need to invoke *entry1()* first (Line 16), which then calls *bar()* (Line 17), and within *bar()* (Line 18) we need to go through two program statements (Line 21-22) to finish the taint propagation and trigger the vulnerability (*d.b[0]* is propagated to the overflow site (1) in [*motivating_example.c*](https://github.com/seclab-ucr/SUTURE/blob/main/benchmark/motivating_example.c)). Since we need two entry function invocations (e.g., first *entry0()* then *entry1()*), this taint trace is 2nd-order.  
 - Line 12, 20: These special lines are internally used by us for debugging purposes.  
 
-The warning report pinpoints a valid integer overflow vulnerability in the motivating example, while avoiding potential false alarms that a less precise static analysis tool may generate, details can be found in Section 2.1 of our [paper](https://www.cs.ucr.edu/~zhiyunq/pub/ccs21_static_high_order.pdf).  
+The warning report pinpoints a valid integer overflow vulnerability in the motivating example, while avoiding potential false alarms that a less precise static analysis tool may generate, details can be found in Section 2.1 of our [paper](https://github.com/seclab-ucr/SUTURE/raw/main/docs/suture-ccs21.pdf).  
 
 ## 0x2 Other Helpful Utilities  
 
@@ -132,7 +132,7 @@ This repo also contains some other tools/scripts that you may find useful.
 ### 0x21 False Alarm Filter  
 
 `~/suture$ python flt_warns.py /path/to/warn_report [Regex] > /path/to/filtered_warn_report`  
-**Explanation**: From our experience, many false alarms in the warning report often share a same problematic sub-taint-trace (see Section 6.3 in our [paper](https://www.cs.ucr.edu/~zhiyunq/pub/ccs21_static_high_order.pdf)). As long as the warning reviewer inspects one false alarm and recognizes the FP-inducing sub-trace, naturally, she can try to automatically exclude all other similar false alarms containing the same sub-trace, reducing the reviewer-perceived false alarm rate.
+**Explanation**: From our experience, many false alarms in the warning report often share a same problematic sub-taint-trace (see Section 6.3 in our [paper](https://github.com/seclab-ucr/SUTURE/raw/main/docs/suture-ccs21.pdf)). As long as the warning reviewer inspects one false alarm and recognizes the FP-inducing sub-trace, naturally, she can try to automatically exclude all other similar false alarms containing the same sub-trace, reducing the reviewer-perceived false alarm rate.
 For this purpose, we provide this simple *flt_warns.py* that takes the original warning report and a python regular expression as inputs, it then will match the RE against every taint trace in the report, once matched, the taint trace will be treated as a false alarm. The script will generate a new filtered warning report excluding all matched taint traces.
 
 ## 0x3 Possible Questions and Answers  
