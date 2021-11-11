@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
+project(SUTURE)
 cmake_policy(SET CMP0074 NEW)
 
 find_package(LLVM REQUIRED CONFIG)
