@@ -1136,9 +1136,20 @@ out:
                             if (!pto || !pto->targetObject) {
                                 continue;
                             }
-                            if (pto && pto->targetObject && (pto->dstfieldId == 0 || pto->dstfieldId == ntf->fid) && 
-                                InstructionUtils::same_types(pto->targetObject->targetType,ntf->ty)) {
-                                nextObjs.insert(pto->targetObject);
+                            if (pto->dstfieldId != 0 && pto->dstfieldId != ntf->fid) {
+                                continue;
+                            }
+                            //Type check, note the special case where "pto->targetObject" is the field 0 emb obj in "ntf".
+                            AliasObject *no = pto->targetObject;
+                            while (no) {
+                                if (InstructionUtils::same_types(no->targetType,ntf->ty)) {
+                                    nextObjs.insert(no);
+                                    break;
+                                }
+                                if (!no->parent || no->parent_field != 0) {
+                                    break;
+                                }
+                                no = no->parent;
                             }
                         }
                     }
@@ -1473,6 +1484,43 @@ out:
 #endif
                         r += traverseHierarchy(srcObj,y->fieldId,layer+1,history,cb);
                     }
+                }
+            }
+            //Another case to consider: field 0 of this "obj" is an embedded obj0, which is pointed to by another obj1,
+            //in this situation, we should also treat obj1 as a points-from obj of this "obj".
+            if (obj->embObjs.find(0) != obj->embObjs.end()) {
+                AliasObject *eobj = obj->embObjs[0];
+                while (eobj) {
+                    if (!eobj->pointsFrom.empty()) {
+                        for (auto &x : eobj->pointsFrom) {
+                            AliasObject *srcObj = x.first;
+                            if (!srcObj) {
+                                continue;
+                            }
+                            std::set<long> fids;
+                            int dcnt = 0;
+                            for (ObjectPointsTo *y : x.second) {
+                                //In this emb-host case, we require that the dst field must be 0.
+                                if (!y || y->targetObject != eobj || y->dstfieldId != 0) {
+                                    continue;
+                                }
+                                if (fids.find(y->fieldId) != fids.end()) {
+                                    dbgs() << "PointsFrom of " << (const void *)eobj << " dup: " << (const void *)(srcObj) << "|" << y->fieldId
+                                           << " #" << ++dcnt << "\n";
+                                    continue;
+                                }
+                                fids.insert(y->fieldId);
+#ifdef DEBUG_HIERARCHY
+                                dbgs() << layer << " traverseHierarchy(): find a host object that can point to this one's field 0 emb obj...\n";
+#endif
+                                r += traverseHierarchy(srcObj,y->fieldId,layer+1,history,cb);
+                            }
+                        }
+                    }
+                    if (eobj->embObjs.find(0) == eobj->embObjs.end()) {
+                        break;
+                    }
+                    eobj = eobj->embObjs[0];
                 }
             }
             if (!r) {
