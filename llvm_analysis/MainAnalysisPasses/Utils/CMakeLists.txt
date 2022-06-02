@@ -1,6 +1,6 @@
 project(Utils C CXX)
 
-add_library(${PROJECT_NAME} STATIC include/CFGUtils.h src/CFGUtils.cpp include/InstructionUtils.h src/InstructionUtils.cpp)
+add_library(${PROJECT_NAME} STATIC include/CFGUtils.h src/CFGUtils.cpp include/InstructionUtils.h src/InstructionUtils.cpp include/Constraint.h src/Constraint.cpp)
 
 include_directories(include/)
 # Use C++11 to compile our pass (i.e., supply -std=c++11).

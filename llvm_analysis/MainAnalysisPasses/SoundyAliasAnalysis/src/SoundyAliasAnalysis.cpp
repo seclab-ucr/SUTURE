@@ -519,14 +519,17 @@ namespace DRCHECKER {
 
             // clean up.
             // explicitly delete references to global variables.
+            /*
             dbgs() << "Clean up global state at: ";
             this->printCurTime();
             currState.cleanup();
             dbgs() << "Clean up DataLayout at: ";
             this->printCurTime();
             delete(currDataLayout);
+            */
             dbgs() << "All done: ";
             this->printCurTime();
+            exit(0);
             return true;
         }
 

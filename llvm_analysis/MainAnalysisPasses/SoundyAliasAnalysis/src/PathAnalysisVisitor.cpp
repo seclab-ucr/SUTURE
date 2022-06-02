@@ -116,8 +116,10 @@ namespace DRCHECKER {
                 << ": " << InstructionUtils::getValueStr(arg) << " -> " << InstructionUtils::getValueStr(farg) 
                 << ", constraint: " << e->to_string() << "\n";
 #endif
-                nc = new Constraint(cons,farg,currFunc);
-                nc->addConstraint2AllBBs(e);
+                nc = new Constraint(farg,currFunc);
+                expr *ne = new expr(z3c);
+                *ne = (*e && (get_z3v_expr_bv((void*)farg) == get_z3v_expr_bv((void*)arg)));
+                nc->addConstraint2AllBBs(ne);
             }else {
                 //The actual argument is a constant, so obviously we need to add a constraint to the formal arg.
                 nc = new Constraint(farg,currFunc);
