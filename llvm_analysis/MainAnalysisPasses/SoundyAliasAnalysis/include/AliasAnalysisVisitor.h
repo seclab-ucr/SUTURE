@@ -13,6 +13,7 @@
 #include <FunctionChecker.h>
 #include <llvm/IR/Operator.h>
 #include "TaintUtils.h"
+#include "PointsToUtils.h"
 
 //#define DEBUG_ALIAS_INSTR_VISIT
 using namespace llvm;

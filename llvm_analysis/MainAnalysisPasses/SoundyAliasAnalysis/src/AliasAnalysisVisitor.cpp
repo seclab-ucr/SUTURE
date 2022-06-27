@@ -31,13 +31,13 @@ namespace DRCHECKER {
         if (!p) {
             return nullptr;
         }
-        if (dyn_cast<GlobalVariable>(p)) {
+        if (dyn_cast<GlobalValue>(p)) {
             //We have already set up all the global pto relationship before all analysis begin, so if now we cannot
             //find the pointee of a certain global variable, that must be we have decided that there is no need to
             //create a pointee object for it (e.g. the gv is a constant string pointer). So we will not create
             //an OutsideObject for it either.
 #ifdef DEBUG_CREATE_DUMMY_OBJ
-            dbgs() << "AliasAnalysisVisitor::createOutsideObj(): we will not create dummy object for the global variable: "
+            dbgs() << "!!! AliasAnalysisVisitor::createOutsideObj(): we will not create dummy object for the global variable: "
             << InstructionUtils::getValueStr(p) << "\n";
 #endif
             return nullptr;
@@ -48,7 +48,6 @@ namespace DRCHECKER {
         }else {
             loc = new InstLoc(p,this->currFuncCallSites);
         }
-        std::map<Value*, std::set<PointerPointsTo*>*> *currPointsTo = this->currState.getPointsToInfo(this->currFuncCallSites);
         if (DRCHECKER::enableXentryImpObjShare) {
             //Can we get a same-typed object from the global cache (generated when analyzing another entry function)?
             //NOTE: there are multiple places in the code that create a new OutsideObject, but we only do this multi-entry cache mechanism here,
@@ -102,15 +101,7 @@ namespace DRCHECKER {
     }
 
     std::set<PointerPointsTo*>* AliasAnalysisVisitor::getPointsToObjects(Value *srcPointer) {
-        // Get points to objects set of the srcPointer at the entry of the instruction
-        // currInstruction.
-        // Note that this is at the entry of the instruction. i.e INFLOW.
-        std::map<Value *, std::set<PointerPointsTo*>*>* targetPointsToMap = this->currState.getPointsToInfo(this->currFuncCallSites);
-        // Here srcPointer should be present in points to map.
-        if(targetPointsToMap->find(srcPointer) != targetPointsToMap->end()) {
-            return (*targetPointsToMap)[srcPointer];
-        }
-        return nullptr;
+        return PointsToUtils::getPointsToObjects(this->currState, this->currFuncCallSites, srcPointer);
     }
 
     bool AliasAnalysisVisitor::isPtoDuplicated(const PointerPointsTo *p0, const PointerPointsTo *p1, bool dbg = false) {
@@ -348,6 +339,17 @@ namespace DRCHECKER {
             return;
         }
         std::map<Value*, std::set<PointerPointsTo*>*> *targetPointsToMap = this->currState.getPointsToInfo(this->currFuncCallSites);
+        if (dyn_cast<GlobalValue>(srcPointer)) {
+            //This should be very unlikely since global ptos have already been set up
+            //in the init phase, and since top-level global vars are also in SSA form,
+            //local functions will not assign new pointees to them, however, in rare
+            //cases where we didn't set up a global pto for a global var due to heuristics
+            //(e.g., that global var is a const string) while in the local functions we
+            //need to create a dummy object for that global var, we may still reach here.
+            dbgs() << "!!! updatePointsToObjects(): try to update the pto records for a"
+            << " global variable: " << InstructionUtils::getValueStr(srcPointer) << "\n";
+            targetPointsToMap = &GlobalState::globalVariables;
+        }
         if (targetPointsToMap->find(srcPointer) == targetPointsToMap->end()) {
             (*targetPointsToMap)[srcPointer] = new std::set<PointerPointsTo*>();
         }
@@ -423,14 +425,8 @@ namespace DRCHECKER {
     }
 
     bool AliasAnalysisVisitor::hasPointsToObjects(Value *srcPointer) {
-        /***
-         * Check if the srcPointer has any pointto objects at currInstruction
-         */
-        std::map<Value*, std::set<PointerPointsTo*>*> *targetPointsToMap = this->currState.getPointsToInfo(this->currFuncCallSites);
-        return targetPointsToMap != nullptr &&
-               targetPointsToMap->find(srcPointer) != targetPointsToMap->end() &&
-               (*targetPointsToMap)[srcPointer] &&
-               (*targetPointsToMap)[srcPointer]->size();
+        return PointsToUtils::hasPointsToObjects(this->currState,
+                                                 this->currFuncCallSites, srcPointer);
     }
 
     //In this version, we assume that "srcPointsTo" points to an embedded struct in a host struct.

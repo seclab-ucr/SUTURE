@@ -565,8 +565,17 @@ namespace DRCHECKER {
                 if (targetInfo != nullptr) {
                     newInfo->insert(targetInfo->begin(), targetInfo->end());
                 } else {
+                    //To copy global pto records to every calling context can lead to high
+                    //memory consumption especially for large bc files with lots of global
+                    //variables. Since top-level global variables are also in SSA form
+                    //(e.g., their pto records will only be assigned once in the init phase)
+                    //and the memory fields they point to also have their own pto records
+                    //with context-sensitive propagating InstLocs, it should be safe to only
+                    //keep a central copy of global pto records (i.e., "GlobalState::globalVariables").
+                    /*
                     // Add all global variables in to the context.
                     newInfo->insert(GlobalState::globalVariables.begin(), GlobalState::globalVariables.end());
+                    */
                 }
                 pointToInformation[newContext] = newInfo;
 
@@ -580,11 +589,6 @@ namespace DRCHECKER {
                 return newContext;
             }
             return currContext;
-        }
-
-        void insertPointsTo(std::vector<Instruction *> *callSites, std::map<Value *, std::set<PointerPointsTo*>*> *targetInfo) {
-            AnalysisContext* currContext = getContext(callSites);
-            pointToInformation[currContext] = targetInfo;
         }
 
         void copyPointsToInfo(AnalysisContext *targetContext) {

@@ -21,19 +21,19 @@ namespace DRCHECKER {
         if(targetPointsToMap->find(srcPointer) != targetPointsToMap->end()) {
             return (*targetPointsToMap)[srcPointer];
         }
+        // Don't forget the global pto records.
+        if (GlobalState::globalVariables.find(srcPointer) != GlobalState::globalVariables.end()) {
+            return GlobalState::globalVariables[srcPointer];
+        }
         return nullptr;
-
     }
 
     bool PointsToUtils::hasPointsToObjects(GlobalState &currState,
                                            std::vector<Instruction *> *currFuncCallSites,
                                            Value *srcPointer) {
-        /***
-         * Check if the srcPointer has any pointto objects at currInstruction
-         */
-        std::map<Value *, std::set<PointerPointsTo*>*>* targetPointsToMap = currState.getPointsToInfo(currFuncCallSites);
-        return targetPointsToMap != nullptr &&
-               targetPointsToMap->find(srcPointer) != targetPointsToMap->end();
+        std::set<PointerPointsTo*> *ptos = PointsToUtils::getPointsToObjects(currState, currFuncCallSites,
+                                                                            srcPointer);
+        return (ptos && !ptos->empty());
     }
 
     bool PointsToUtils::getTargetFunctions(GlobalState &currState, std::vector<Instruction*> *currFuncCallSites,
